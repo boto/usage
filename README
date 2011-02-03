@@ -1,0 +1,84 @@
+usage provides some basic tools to parse XML usage reports from
+Amazone Web Services.  These reports contain detailed information
+about resources that you are using (and therefore will be billed for)
+for a given AWS account.  There is no API available to download these
+usage reports from your AWS web console so you either have to download
+them manually or use a screen scraping approach as described here:
+
+http://gist.github.com/421559
+
+This software was written a while ago and has been languising on my
+hard drive ever since.  I thought it might be useful to someone so I
+decided to put it up on github.
+
+Using usage
+-----------
+Assuming you have an XML usage report ('report.xml'), you can parse that file like this:
+
+In [1]: import usage.dataset
+
+In [2]: ds = usage.dataset.DataSet()
+
+In [3]: ds.load('report.xml')       
+
+In [4]: ds.keys()
+Out[4]: 
+[u'AmazonEC2.ElasticIP-In.DataTransfer-Regional-Bytes',
+ u'AmazonEC2.EBS:IO-Write.EBS:VolumeIOUsage',
+ u'AmazonEC2.RunInstances.DataTransfer-Out-Bytes',
+ u'AmazonEC2.EBS:IO-Read.EBS:VolumeIOUsage',
+ u'AmazonEC2.PublicIP-In.DataTransfer-In-Bytes',
+ u'AmazonEC2.RunInstances.BoxUsage',
+ u'AmazonEC2.CreateVolume.EBS:VolumeUsage',
+ u'AmazonEC2.InterZone-In.DataTransfer-Regional-Bytes',
+ u'AmazonEC2.CreateSnapshot.EBS:SnapshotPutUsage',
+ u'AmazonEC2.RunInstances.DataTransfer-In-Bytes',
+ u'AmazonEC2.CreateSnapshot.EBS:SnapshotUsage',
+ u'AmazonEC2.ElasticIP-Out.DataTransfer-Regional-Bytes',
+ u'AmazonEC2.PublicIP-Out.DataTransfer-Regional-Bytes',
+ u'AmazonEC2.AssociateAddress.ElasticIP:Remap',
+ u'AmazonEC2.PublicIP-In.DataTransfer-Regional-Bytes',
+ u'AmazonEC2.InterZone-Out.DataTransfer-Regional-Bytes']
+
+As you can see, the DataSet class is a subclass of Python's dict
+object.  Each value stored in the DataSet is of type
+usage.dimension.Dimension.
+
+In [5]: dim = ds['AmazonEC2.RunInstances.BoxUsage']
+
+In [6]: dim
+Out[6]: Dimension.AmazonEC2.RunInstances.BoxUsage
+
+The Dimension object has a number of fields, such as the
+operation_name, the service, a start and end timestamp and a data
+attribute which is a list of actual data points pulled from the usage
+report.  Each datum is of type usage.usage.Usage which has the
+attributes start, end and value:
+
+In [9]: usage = dim.data[0]
+
+In [10]: usage.start
+Out[10]: datetime.datetime(2009, 7, 9, 16, 0)
+
+In [11]: usage.end
+Out[11]: datetime.datetime(2009, 7, 9, 17, 0)
+
+In [12]: usage.value
+Out[12]: 4
+
+There are some examples of reports that can be generated from the
+usage data in usage.reports.  For example:
+
+In [14]: import usage.reports
+
+In [15]: ebs = usage.reports.EBSReports(ds)
+
+In [16]: ebs.report()
+EBS Reports
+-----------
+59502 I/O Requests     = 0.000000
+545 SnapShot Puts    = 0.000000
+541129438500 SnapShot Storage = 81.150000
+
+These reports are only examples and may not produce accurate data at
+this point but they might prove useful in developing your own reports.
